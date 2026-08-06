@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Rain-Activated Water Pump Simulation and Questions</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: transparent !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --main-surface-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: light-dark(rgb(26 28 31), rgb(255 255 255));
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(--foreground);
+  --popover: light-dark(rgb(255 255 255), rgb(45 45 45));
+  --popover-foreground: var(--foreground);
+  --primary: light-dark(rgb(51 156 255), rgb(131 195 255));
+  --primary-foreground: light-dark(rgb(255 255 255), rgb(13 13 13));
+  --secondary: light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%));
+  --secondary-foreground: var(--foreground);
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: light-dark(
+    rgb(26 28 31 / 49.4%),
+    rgb(255 255 255 / 49.8%)
+  );
+  --accent: light-dark(rgb(229 242 255), rgb(13 39 63));
+  --accent-foreground: var(--primary);
+  --destructive: light-dark(rgb(226 85 7), rgb(255 133 73));
+  --border: light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%));
+  --input: light-dark(
+    rgb(26 28 31 / 11.8%),
+    color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+  );
+  --ring: light-dark(rgb(51 156 255), rgb(131 195 255 / 76%));
+  --font-size-base: 14px;
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: 10px;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+  --color-background-primary: var(--background);
+  --color-text-primary: var(--foreground);
+  --color-border-secondary: var(--border);
+}
+
+:root[data-visualize-standalone] {
+  background-color: var(--background) !important;
+}
+
+/* Generic mobile code-block hosts provide light/dark mode but no series palette.
+   AppBlock hosts set all six variables themselves. */
+:root:not([data-app-block-surface]) {
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+:root:not([data-app-block-surface]) > body {
+  padding: 12px;
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The bundled tooltip runtime owns [data-tooltip]. AppBlock's CSS-only
+   pseudo-tooltip can widen dense grids even while hidden. */
+main [data-tooltip]::after {
+  content: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--interactive-label-primary-default, var(--primary-foreground));
+  background: var(--interactive-bg-primary-default, var(--foreground));
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(
+    in srgb,
+    var(--interactive-label-primary-default, var(--primary-foreground)) 50%,
+    transparent
+  );
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+</style>
+<style>
+  html { color-scheme:light; }
+  html, body { background:#ffffff !important; color:#1f2937; }
+  body { margin:0; }
+  .worksheet-shell { max-width:1000px; margin:0 auto; padding:20px; }
+  .worksheet-heading { margin:0 0 8px; font-size:1.6rem; font-weight:500; }
+  .worksheet-intro { margin:0 0 20px; }
+  .worksheet-questions { border-top:2px solid #d1d5db; margin-top:24px; padding-top:22px; }
+  .worksheet-questions h2 { margin:0 0 18px; font-size:1.35rem; font-weight:500; }
+  .worksheet-question { margin:0 0 22px; }
+  .worksheet-question label { display:block; font-weight:500; margin-bottom:8px; }
+  .worksheet-question textarea { box-sizing:border-box; width:100%; min-height:88px; resize:vertical; border:1px solid #9ca3af; border-radius:8px; padding:12px; background:#ffffff; color:#111827; font:inherit; line-height:1.5; }
+  .worksheet-question textarea:focus { outline:3px solid #93c5fd; outline-offset:2px; }
+  .answer-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:8px 0 18px; }
+  .submit-answers { border:0; border-radius:8px; padding:11px 18px; background:#1769aa; color:#ffffff; font:inherit; font-weight:500; cursor:pointer; }
+  .submit-answers:hover { background:#0f578f; }
+  .submit-answers:focus-visible { outline:3px solid #93c5fd; outline-offset:2px; }
+  .marking-results { border:2px solid #167a3e; border-radius:10px; padding:18px; background:#f0fdf4; }
+  .marking-results[hidden] { display:none; }
+  .marking-results h3 { margin:0 0 12px; color:#14532d; font-size:1.2rem; }
+  .total-score { margin:0 0 16px; font-size:1.1rem; font-weight:500; }
+  .model-answer { border-top:1px solid #86c99e; padding-top:12px; margin-top:12px; }
+  .model-answer h4 { margin:0 0 6px; font-weight:500; }
+  .model-answer p { margin:0; line-height:1.55; }
+  .score-value { color:#14532d; }
+  @media (max-width:600px) { .worksheet-shell { padding:12px; } }
+  @media print {
+    .worksheet-shell { max-width:none; padding:0; }
+    .worksheet-question textarea { min-height:100px; border:0; border-bottom:1px solid #111827; border-radius:0; }
+  }
+</style>
+</head>
+<body>
+<main class="worksheet-shell">
+<h1 class="worksheet-heading">Rain-Activated Water Pump</h1>
+<p class="worksheet-intro">Use the simulation to observe how rainwater closes the circuit and turns on the water pump.</p>
+<div id="rain-pump-sim">
+  <div class="viz-controls">
+    <button type="button" class="btn btn-primary" id="rp-run">Start rain</button>
+    <button type="button" class="btn" id="rp-stop">Stop rain / drain</button>
+    <button type="button" class="btn" id="rp-reset">Reset</button>
+    <label class="form-label" for="rp-rate">Rainfall rate: <span id="rp-rate-value">1.0×</span>
+      <input class="form-range" id="rp-rate" type="range" min="0.4" max="2" step="0.2" value="1">
+    </label>
+  </div>
+  <div class="rp-status-row" aria-live="polite">
+    <span class="viz-badge" id="rp-status">Circuit open · Pump off</span>
+  </div>
+
+  <svg id="rp-svg" viewBox="0 0 900 540" role="img" aria-labelledby="rp-title rp-desc">
+    <title id="rp-title">Rain-activated water-pump circuit simulation</title>
+    <desc id="rp-desc">Rain fills a metal container. A wooden float lifts a metal sheet until it bridges two rods, closing the circuit. Bright pulses show conventional current moving from the battery positive terminal through the switch and pump to the negative terminal. The pump impeller spins and blue moving water flows from the container through the pump and out.</desc>
+    <defs>
+      <clipPath id="rp-tank-clip"><rect x="525" y="250" width="250" height="205" rx="4"/></clipPath>
+      <marker id="rp-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#268be5"/></marker>
+      <marker id="rp-label-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#1f2937"/></marker>
+    </defs>
+
+    <rect class="rp-classroom-bg" x="0" y="0" width="900" height="540" rx="12"/>
+
+    <rect class="rp-sky" x="0" y="58" width="900" height="342" rx="12"/>
+    <path class="rp-soil" d="M0 405 H515 V395 H785 V405 H900 V540 H0 Z"/>
+    <path class="rp-grass" d="M0 405 H515 M785 405 H900"/>
+    <text class="rp-environment-label" x="38" y="438">GROUND / SOIL</text>
+    <text class="rp-environment-label" x="38" y="392">ground surface</text>
+
+    <path class="rp-wire" d="M145 125 H735 V170"/>
+    <path class="rp-wire" d="M565 170 H430 V355 H290"/>
+    <path class="rp-wire" d="M160 355 H145 V225"/>
+
+    <g aria-label="Battery">
+      <line class="rp-battery" x1="105" y1="160" x2="185" y2="160"/>
+      <line class="rp-battery" x1="120" y1="190" x2="170" y2="190"/>
+      <line class="rp-wire" x1="145" y1="125" x2="145" y2="160"/>
+      <line class="rp-wire" x1="145" y1="190" x2="145" y2="225"/>
+      <text class="rp-positive" x="195" y="164">+ positive terminal</text>
+      <text class="rp-negative" x="180" y="203">− negative terminal</text>
+      <text class="rp-name" x="105" y="105">Battery</text>
+    </g>
+
+    <g aria-label="Water pipes from the container through the pump and out">
+      <path class="rp-pipe" d="M525 442 H330 Q285 442 270 410"/>
+      <path class="rp-pipe" d="M180 315 Q150 285 115 285 H28"/>
+      <path class="rp-pipe-flow" d="M525 442 H330 Q285 442 270 410"/>
+      <path class="rp-pipe-flow" d="M180 315 Q150 285 115 285 H28"/>
+      <path class="rp-pipe-flow rp-ground-stream" d="M28 285 C16 326 22 372 60 398"/>
+      <path class="rp-outlet-spray" id="rp-outlet-spray" d="M28 285 C17 293 17 307 28 313 M42 285 C31 298 33 314 45 322"/>
+      <ellipse class="rp-ground-puddle" cx="66" cy="400" rx="42" ry="8"/>
+      <text class="rp-water-flow-label" x="92" y="250" text-anchor="middle">water pumped out</text>
+    </g>
+
+    <g aria-label="Water pump">
+      <rect class="rp-device" x="160" y="300" width="130" height="110" rx="8"/>
+      <circle class="rp-pump-wheel" cx="225" cy="355" r="28"/>
+      <g class="rp-pump-rotor" id="rp-pump-rotor">
+        <path class="rp-pump-blade" d="M225 329 L235 350 L225 355 Z M251 355 L230 365 L225 355 Z M225 381 L215 360 L225 355 Z M199 355 L220 345 L225 355 Z"/>
+        <circle class="rp-rotor-mark" cx="225" cy="333" r="5"/>
+      </g>
+      <text class="rp-name" x="175" y="392">Water pump</text>
+      <text class="rp-pump-status" id="rp-pump-status" x="225" y="430" text-anchor="middle">OFF — not moving</text>
+    </g>
+
+    <g aria-label="Metal container and floating switch">
+      <path class="rp-tank" d="M525 245 V455 H775 V245"/>
+      <line class="rp-lid" x1="525" y1="245" x2="775" y2="245"/>
+      <rect class="rp-water" id="rp-water" x="525" y="455" width="250" height="0" clip-path="url(#rp-tank-clip)"/>
+      <path class="rp-inlet-pipe" d="M835 405 V440 H775"/>
+      <path class="rp-inlet-water" d="M835 405 V440 H775"/>
+      <path id="rp-inlet-motion-path" d="M835 405 V440 H775" fill="none" stroke="transparent"/>
+      <g class="rp-inlet-arrows" aria-hidden="true">
+        <polygon class="rp-flow-arrow" points="-7,-5 7,0 -7,5"/>
+        <polygon class="rp-flow-arrow" points="-7,-5 7,0 -7,5"/>
+        <polygon class="rp-flow-arrow" points="-7,-5 7,0 -7,5"/>
+      </g>
+      <ellipse class="rp-hole" cx="835" cy="405" rx="13" ry="7"/>
+      <text class="rp-hole-label" x="855" y="401">G</text>
+      <text class="rp-inlet-note" x="835" y="345" text-anchor="middle">
+        <tspan x="835" dy="0">Rainwater enters</tspan>
+        <tspan x="835" dy="20">through hole G</tspan>
+      </text>
+      <path class="rp-inlet-note-arrow" d="M835 372 V393" marker-end="url(#rp-label-arrow)"/>
+      <text class="rp-water-label" id="rp-water-label" x="650" y="451" text-anchor="middle" opacity="0">WATER</text>
+
+      <g id="rp-float">
+        <rect class="rp-wood" x="585" y="400" width="130" height="34" rx="5"/>
+        <rect class="rp-sheet" x="545" y="386" width="210" height="14" rx="3"/>
+        <text class="rp-label rp-float-label" x="650" y="426" text-anchor="middle">wooden float</text>
+      </g>
+
+      <rect class="rp-rubber" x="548" y="205" width="34" height="50" rx="5"/>
+      <rect class="rp-rubber" x="718" y="205" width="34" height="50" rx="5"/>
+      <line class="rp-rod" x1="565" y1="170" x2="565" y2="285"/>
+      <line class="rp-rod" x1="735" y1="170" x2="735" y2="285"/>
+      <path class="rp-label-leader" d="M615 155 L568 174" marker-end="url(#rp-label-arrow)"/>
+      <path class="rp-label-leader" d="M685 155 L732 174" marker-end="url(#rp-label-arrow)"/>
+      <text class="rp-name" x="650" y="150" text-anchor="middle">metal rods</text>
+      <path class="rp-label-leader" d="M605 198 L576 216" marker-end="url(#rp-label-arrow)"/>
+      <path class="rp-label-leader" d="M695 198 L724 216" marker-end="url(#rp-label-arrow)"/>
+      <text class="rp-label" x="650" y="195" text-anchor="middle">rubber insulators</text>
+      <text class="rp-name" x="576" y="505">metal container</text>
+    </g>
+
+    <g id="rp-rain" aria-hidden="true">
+      <path class="rp-cloud" d="M770 80 C780 55 815 56 826 78 C851 68 874 86 870 108 H758 C751 94 758 82 770 80 Z"/>
+      <path class="rp-raindrops" d="M775 125 l-9 18 M805 118 l-9 18 M835 128 l-9 18 M865 120 l-9 18 M790 157 l-9 18 M825 162 l-9 18 M858 154 l-9 18"/>
+    </g>
+
+    <path id="rp-current-path" d="M145 125 H735 V285 H565 V170 H430 V355 H290 H160 H145 V190" fill="none" stroke="transparent"/>
+    <path class="rp-current-flow" id="rp-current-flow" d="M145 125 H735 V285 H565 V170 H430 V355 H290 H160 H145 V190"/>
+    <g id="rp-current-dots" aria-hidden="true"></g>
+
+    <g id="rp-current-key" opacity="0">
+      <circle cx="355" cy="523" r="6" fill="#f05a28"/>
+      <text class="rp-label" x="368" y="528">Conventional current: + → −</text>
+    </g>
+    <text class="rp-state-text" id="rp-state-text" x="450" y="42" text-anchor="middle">Rain has not started — the metal sheet is below the rods.</text>
+  </svg>
+</div>
+
+<section class="worksheet-questions" aria-labelledby="questions-heading">
+  <h2 id="questions-heading">Questions</h2>
+
+  <div class="worksheet-question">
+    <label for="answer-a">(a) State a property of rubber that allows the set-up to work properly.</label>
+    <textarea id="answer-a" name="answer-a" rows="3" aria-label="Answer to question a"></textarea>
+  </div>
+
+  <div class="worksheet-question">
+    <label for="answer-b">(b) Describe and explain how the water pump is turned on when it rains heavily.</label>
+    <textarea id="answer-b" name="answer-b" rows="5" aria-label="Answer to question b"></textarea>
+  </div>
+
+  <div class="worksheet-question">
+    <label for="answer-c">(c) Without using different apparatus, suggest one way to turn on the water pump when it rains less heavily. Explain your answer.</label>
+    <textarea id="answer-c" name="answer-c" rows="5" aria-label="Answer to question c"></textarea>
+  </div>
+
+  <div class="answer-actions">
+    <button class="submit-answers" id="submit-answers" type="button">Submit answers</button>
+    <span>Maximum score: 6 marks</span>
+  </div>
+
+  <section class="marking-results" id="marking-results" aria-labelledby="results-heading" aria-live="polite" hidden>
+    <h3 id="results-heading">Score and correct answers</h3>
+    <p class="total-score">Suggested score: <span class="score-value" id="total-score">0 / 6</span></p>
+
+    <div class="model-answer">
+      <h4>(a) Score: <span class="score-value" id="score-a">0 / 1</span></h4>
+      <p><strong>Model answer:</strong> Rubber is an insulator of electricity.</p>
+    </div>
+
+    <div class="model-answer">
+      <h4>(b) Score: <span class="score-value" id="score-b">0 / 3</span></h4>
+      <p><strong>Model answer:</strong> When it rains heavily, the water level in the metal container will rise rapidly. The wooden block with the metal sheet, which floats on water, rises. When the metal sheet touches the metal rods, the circuit will be closed and electric current can flow through the circuit, so the pump works.</p>
+    </div>
+
+    <div class="model-answer">
+      <h4>(c) Score: <span class="score-value" id="score-c">0 / 2</span></h4>
+      <p><strong>Model answer:</strong> Lengthen the metal rods. When it rains less heavily, the water level will be low / will not rise so quickly, and the metal plates on the wooden block cannot touch the metal rods. When the metal rods are lengthened, even with a low water level, the metal plates can touch the metal rods, to close the circuit to allow electric current to flow through the circuit, allowing the pump to work.</p>
+    </div>
+  </section>
+</section>
+</main>
+
+<style>
+  #rain-pump-sim { color:#1f2937; background:#ffffff; padding:12px; }
+  #rain-pump-sim .viz-controls { margin-bottom:6px; }
+  #rain-pump-sim .rp-status-row { height:36px; display:flex; align-items:center; }
+  #rain-pump-sim #rp-status { display:inline-flex; width:310px; max-width:100%; justify-content:center; white-space:nowrap; }
+  #rain-pump-sim .form-label { min-width: 190px; }
+  #rp-svg { display:block; width:100%; height:auto; overflow:visible; }
+  #rain-pump-sim .rp-classroom-bg { fill:#ffffff; }
+  #rain-pump-sim .rp-sky { fill:#eaf6ff; }
+  #rain-pump-sim .rp-soil { fill:#a56a43; fill-opacity:.78; }
+  #rain-pump-sim .rp-grass { fill:none; stroke:#4d8b31; stroke-width:10; stroke-linecap:round; }
+  #rain-pump-sim .rp-environment-label { fill:#1f2937; font-weight:500; }
+  #rain-pump-sim .rp-wire { fill:none; stroke:#1f2937; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+  #rain-pump-sim .rp-battery { stroke:#1f2937; stroke-width:7; stroke-linecap:round; }
+  #rain-pump-sim .rp-device { fill:#e5e7eb; stroke:#6b7280; stroke-width:2; }
+  #rain-pump-sim .rp-pump-wheel { fill:none; stroke:#1f2937; stroke-width:3; }
+  #rain-pump-sim .rp-pump-blade { fill:#6b7280; }
+  #rain-pump-sim .rp-rotor-mark { fill:#f05a28; }
+  #rain-pump-sim .rp-pipe { fill:none; stroke:#667784; stroke-width:14; stroke-linecap:round; stroke-linejoin:round; }
+  #rain-pump-sim .rp-pipe-flow { fill:none; stroke:#268be5; stroke-width:8; stroke-linecap:round; stroke-dasharray:18 16; opacity:0; }
+  #rain-pump-sim .rp-ground-stream { stroke-width:9; }
+  #rain-pump-sim .rp-outlet-spray { fill:none; stroke:#268be5; stroke-width:6; stroke-linecap:round; opacity:0; }
+  #rain-pump-sim .rp-ground-puddle { fill:#268be5; opacity:0; }
+  #rain-pump-sim .rp-water-flow-label { fill:#083b66; stroke:#fff; stroke-width:8; paint-order:stroke fill; stroke-linejoin:round; font-weight:500; }
+  #rain-pump-sim .rp-tank { fill:#dbe4ea; fill-opacity:.48; stroke:#4b5563; stroke-width:6; stroke-linejoin:round; }
+  #rain-pump-sim .rp-lid { stroke:#4b5563; stroke-width:7; stroke-linecap:round; }
+  #rain-pump-sim .rp-water { fill:#268be5; fill-opacity:.82; }
+  #rain-pump-sim .rp-water-label { fill:#083b66; font-weight:500; }
+  #rain-pump-sim .rp-inlet-pipe { fill:none; stroke:#4b5563; stroke-width:18; stroke-linecap:round; stroke-linejoin:round; }
+  #rain-pump-sim .rp-inlet-water { fill:none; stroke:#268be5; stroke-width:10; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:18 12; opacity:.38; }
+  #rain-pump-sim .rp-flow-arrow { fill:#268be5; opacity:.45; }
+  #rain-pump-sim .rp-hole { fill:#268be5; stroke:#1f2937; stroke-width:3; }
+  #rain-pump-sim .rp-hole-label, #rain-pump-sim .rp-inlet-note { fill:#1f2937; font-weight:500; }
+  #rain-pump-sim .rp-inlet-note-arrow { fill:none; stroke:#1f2937; stroke-width:2; }
+  #rain-pump-sim .rp-wood { fill:#c9954f; stroke:#70451f; stroke-width:2; }
+  #rain-pump-sim .rp-sheet { fill:#9ca3af; stroke:#4b5563; stroke-width:6; }
+  #rain-pump-sim .rp-rod { stroke:#e8eef3; stroke-width:10; filter:drop-shadow(0 0 2px #111827); }
+  #rain-pump-sim .rp-rubber { fill:#263341; stroke:#111827; stroke-width:3; }
+  #rain-pump-sim .rp-label, #rain-pump-sim .rp-state-text { fill:#1f2937; font-weight:400; }
+  #rain-pump-sim .rp-label-leader { fill:none; stroke:#1f2937; stroke-width:2; stroke-linecap:round; }
+  #rain-pump-sim .rp-positive { fill:#c62828; font-weight:500; }
+  #rain-pump-sim .rp-negative { fill:#1f2937; font-weight:500; }
+  #rain-pump-sim .rp-name { fill:#111827; font-weight:500; }
+  #rain-pump-sim .rp-pump-status { fill:#c62828; stroke:#ffffff; stroke-width:7; stroke-linejoin:round; paint-order:stroke fill; font-weight:500; }
+  #rain-pump-sim #rp-rain { opacity:.28; }
+  #rain-pump-sim .rp-cloud { fill:#d7e3ec; stroke:#6b7280; stroke-width:2; }
+  #rain-pump-sim .rp-raindrops { fill:none; stroke:#268be5; stroke-width:5; stroke-linecap:round; opacity:0; }
+  #rain-pump-sim .rp-current-dot { fill:#f05a28; stroke:#ffffff; stroke-width:3; filter:drop-shadow(0 0 4px #f05a28); }
+  #rain-pump-sim .rp-current-flow { fill:none; stroke:#f05a28; stroke-width:10; stroke-linecap:round; stroke-dasharray:7 27; opacity:0; filter:drop-shadow(0 0 4px #f05a28); }
+  #rain-pump-sim.is-closed .rp-wire, #rain-pump-sim.is-closed .rp-rod, #rain-pump-sim.is-closed .rp-sheet { stroke:#f05a28; }
+  #rain-pump-sim.is-closed .rp-pump-status { fill:#167a3e; }
+  #rain-pump-sim.is-closed .rp-current-flow { opacity:1; }
+  #rain-pump-sim.is-closed .rp-pipe-flow { opacity:1; }
+  #rain-pump-sim.is-closed .rp-outlet-spray { opacity:1; }
+  #rain-pump-sim.is-closed .rp-ground-puddle { opacity:.7; }
+  #rain-pump-sim.is-raining #rp-rain { opacity:1; }
+  #rain-pump-sim.is-raining .rp-raindrops { opacity:1; animation:rp-rain-fall .7s linear infinite; }
+  #rain-pump-sim.is-raining .rp-inlet-water { opacity:1; animation:rp-inlet-flow .7s linear infinite; }
+  @keyframes rp-rain-fall { from { transform:translateY(-16px); } to { transform:translateY(16px); } }
+  @keyframes rp-inlet-flow { to { stroke-dashoffset:-60; } }
+  @media (prefers-reduced-motion: reduce) {
+    #rain-pump-sim.is-raining .rp-raindrops, #rain-pump-sim.is-raining .rp-inlet-water { animation:none; }
+  }
+  @media (max-width:520px) {
+    #rain-pump-sim .rp-label, #rain-pump-sim .rp-name, #rain-pump-sim .rp-state-text { font-size:18px; }
+  }
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById("rain-pump-sim");
+  const runBtn = document.getElementById("rp-run");
+  const stopBtn = document.getElementById("rp-stop");
+  const resetBtn = document.getElementById("rp-reset");
+  const rateInput = document.getElementById("rp-rate");
+  const rateValue = document.getElementById("rp-rate-value");
+  const status = document.getElementById("rp-status");
+  const water = document.getElementById("rp-water");
+  const waterLabel = document.getElementById("rp-water-label");
+  const floatGroup = document.getElementById("rp-float");
+  const stateText = document.getElementById("rp-state-text");
+  const currentKey = document.getElementById("rp-current-key");
+  const pumpStatus = document.getElementById("rp-pump-status");
+  const pumpRotor = document.getElementById("rp-pump-rotor");
+  const currentFlow = document.getElementById("rp-current-flow");
+  const pipeFlows = root.querySelectorAll(".rp-pipe-flow");
+  const outletSpray = document.getElementById("rp-outlet-spray");
+  const inletMotionPath = document.getElementById("rp-inlet-motion-path");
+  const inletArrows = Array.from(root.querySelectorAll(".rp-flow-arrow"));
+  const path = document.getElementById("rp-current-path");
+  const dotsGroup = document.getElementById("rp-current-dots");
+  const dots = [];
+  const initialLevel = 28;
+  let level = initialLevel;
+  let raining = false;
+  let draining = false;
+  let closed = false;
+  let lastTime = 0;
+  let frame = 0;
+
+  for (let i = 0; i < 6; i += 1) {
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("r", "10");
+    dot.setAttribute("class", "rp-current-dot");
+    dot.style.display = "none";
+    dotsGroup.appendChild(dot);
+    dots.push(dot);
+  }
+
+  function updateScene() {
+    const waterHeight = level * 1.75;
+    water.setAttribute("y", String(455 - waterHeight));
+    water.setAttribute("height", String(waterHeight));
+    waterLabel.setAttribute("opacity", level > 16 ? "1" : "0");
+    const floatLift = Math.min(111, Math.max(0, level * 1.75 - 31));
+    floatGroup.setAttribute("transform", "translate(0 " + (-floatLift) + ")");
+    const nowClosed = closed ? level > 74 : level >= 80;
+    if (nowClosed !== closed) {
+      closed = nowClosed;
+      root.classList.toggle("is-closed", closed);
+      dots.forEach(dot => { dot.style.display = closed ? "block" : "none"; });
+      currentKey.setAttribute("opacity", closed ? "1" : "0");
+    }
+    if (closed) {
+      status.textContent = "Circuit closed · Pump on · Water falling";
+      stateText.textContent = "Pump ON: water leaves the container, so its blue level and float move down.";
+      pumpStatus.textContent = "ON — pump spinning";
+    } else if (draining) {
+      status.textContent = "Circuit open · Water falling";
+      stateText.textContent = "Rain stopped — the water and float fall, opening the circuit.";
+      pumpStatus.textContent = "OFF — not moving";
+    } else if (raining) {
+      status.textContent = "Circuit open · Water rising";
+      stateText.textContent = "The float rises with the water, but the contacts have not met yet.";
+      pumpStatus.textContent = "OFF — not moving";
+    } else if (Math.abs(level - initialLevel) < 0.01) {
+      status.textContent = "Circuit open · Pump off";
+      stateText.textContent = "The wooden block is floating partly immersed in the blue water.";
+      pumpStatus.textContent = "OFF — not moving";
+    } else if (level > initialLevel) {
+      status.textContent = "Circuit open · Rain paused";
+      stateText.textContent = "Rain is paused — the metal sheet remains below the rods.";
+      pumpStatus.textContent = "OFF — not moving";
+    } else {
+      status.textContent = "Circuit open · Pump off";
+      stateText.textContent = "Rain has not started — the metal sheet is below the rods.";
+      pumpStatus.textContent = "OFF — not moving";
+    }
+  }
+
+  function animate(time) {
+    const elapsed = lastTime ? Math.min(40, time - lastTime) : 0;
+    lastTime = time;
+    if (raining && level < 100) {
+      level = Math.min(100, level + elapsed * 0.010 * Number(rateInput.value));
+      if (level === 100) {
+        raining = false;
+        root.classList.remove("is-raining");
+      }
+      updateScene();
+    }
+    if (closed && level > initialLevel) {
+      const pumpRate = raining ? 0.014 : 0.004;
+      level = Math.max(initialLevel, level - elapsed * pumpRate * Number(rateInput.value));
+      updateScene();
+    }
+    if (draining && !closed && level > initialLevel) {
+      level = Math.max(initialLevel, level - elapsed * 0.005 * Number(rateInput.value));
+      if (level === initialLevel) {
+        draining = false;
+      }
+      updateScene();
+    }
+    const inletLength = inletMotionPath.getTotalLength();
+    const inletMotion = raining ? time * 0.075 : 0;
+    inletArrows.forEach((arrow, index) => {
+      const travel = (inletMotion + index * inletLength / inletArrows.length) % inletLength;
+      const point = inletMotionPath.getPointAtLength(travel);
+      const nextPoint = inletMotionPath.getPointAtLength(Math.min(inletLength, travel + 1));
+      const angle = Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x) * 180 / Math.PI;
+      arrow.setAttribute("transform", "translate(" + point.x + " " + point.y + ") rotate(" + angle + ")");
+      arrow.style.opacity = raining ? "1" : ".45";
+    });
+    if (closed) {
+      const length = path.getTotalLength();
+      const speed = time * 0.22;
+      dots.forEach((dot, index) => {
+        const point = path.getPointAtLength((speed + index * length / dots.length) % length);
+        dot.setAttribute("cx", String(point.x));
+        dot.setAttribute("cy", String(point.y));
+      });
+      pumpRotor.setAttribute("transform", "rotate(" + ((time * 0.32) % 360) + " 225 355)");
+      currentFlow.setAttribute("stroke-dashoffset", String(-((time * 0.11) % 68)));
+      pipeFlows.forEach(flow => {
+        flow.setAttribute("stroke-dashoffset", String(-((time * 0.1) % 68)));
+      });
+      outletSpray.setAttribute("transform", "translate(0 " + (Math.sin(time / 150) * 4) + ")");
+    } else {
+      pumpRotor.setAttribute("transform", "rotate(0 225 355)");
+      currentFlow.setAttribute("stroke-dashoffset", "0");
+      pipeFlows.forEach(flow => flow.setAttribute("stroke-dashoffset", "0"));
+      outletSpray.setAttribute("transform", "translate(0 0)");
+    }
+    frame = requestAnimationFrame(animate);
+  }
+
+  runBtn.addEventListener("click", () => {
+    raining = true;
+    draining = false;
+    root.classList.add("is-raining");
+    updateScene();
+  });
+  stopBtn.addEventListener("click", () => {
+    raining = false;
+    draining = level > initialLevel;
+    root.classList.remove("is-raining");
+    updateScene();
+  });
+  resetBtn.addEventListener("click", () => {
+    raining = false;
+    draining = false;
+    closed = false;
+      level = initialLevel;
+    root.classList.remove("is-raining", "is-closed");
+    dots.forEach(dot => { dot.style.display = "none"; });
+    currentKey.setAttribute("opacity", "0");
+    updateScene();
+  });
+  rateInput.addEventListener("input", () => {
+    rateValue.textContent = Number(rateInput.value).toFixed(1) + "×";
+  });
+  updateScene();
+  frame = requestAnimationFrame(animate);
+  window.addEventListener("unload", () => cancelAnimationFrame(frame), { once:true });
+})();
+</script>
+
+<script id="codex-visualization-floating-ui-core" src="https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js"></script>
+<script id="codex-visualization-floating-ui-dom" src="https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js"></script>
+<script id="codex-visualization-lucide" async src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js"></script>
+<script id="codex-visualization-tooltip">/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return */
+// Runs inside the visualization sandbox, not the host webview.
+(() => {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set(["top", "right", "bottom", "left"]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =>
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest("[data-tooltip]")
+      : null;
+  const containsTarget = (trigger, target) =>
+    target?.nodeType != null && trigger.contains(target);
+  const getContent = (trigger) =>
+    trigger.getAttribute("data-tooltip")?.trim() ?? "";
+  const getPlacement = (trigger) => {
+    const placement = trigger.getAttribute("data-tooltip-placement");
+    return tooltipPlacements.has(placement) ? placement : "top";
+  };
+  const getTooltip = () => {
+    if (tooltip == null) {
+      tooltip = document.createElement("div");
+      tooltip.id = tooltipId;
+      tooltip.className = "tooltip";
+      tooltip.setAttribute("role", "tooltip");
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) => {
+    const ids = new Set(
+      (trigger.getAttribute("aria-describedby") ?? "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute("aria-describedby");
+    } else {
+      trigger.setAttribute("aria-describedby", [...ids].join(" "));
+    }
+  };
+  const clearOpenTimeout = () => {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) => {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) => {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              "--tooltip-available-width",
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              "--tooltip-available-height",
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: "fixed",
+    })
+      .then(({ x, y }) => {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = "visible";
+      })
+      .catch(() => {
+        if (activeTrigger === trigger && request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) => {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = "hidden";
+    floating.style.transform = "translate(0, 0)";
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () => {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) => {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() < skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() => {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(":focus-visible")) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) => {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () => {
+    closeTooltip(false);
+    document.removeEventListener("pointerover", handlePointerOpen);
+    document.removeEventListener("pointerout", handleLeave);
+    document.removeEventListener("focusin", handleFocusIn);
+    document.removeEventListener("focusout", handleLeave);
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener("pointerover", handlePointerOpen);
+  document.addEventListener("pointerout", handleLeave);
+  document.addEventListener("focusin", handleFocusIn);
+  document.addEventListener("focusout", handleLeave);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  window.addEventListener("pagehide", destroy, { once: true });
+})();
+</script>
+<script id="codex-visualization-lucide-initialization">(() => {
+  const initialize = () => {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById("codex-visualization-lucide")
+    ?.addEventListener("load", initialize, { once: true });
+})();
+</script>
+<script id="worksheet-marking">
+(() => {
+  const submitButton = document.getElementById("submit-answers");
+  const results = document.getElementById("marking-results");
+  const totalScore = document.getElementById("total-score");
+  const scoreA = document.getElementById("score-a");
+  const scoreB = document.getElementById("score-b");
+  const scoreC = document.getElementById("score-c");
+
+  function answerText(id) {
+    return document.getElementById(id).value.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function hasAny(text, patterns) {
+    return patterns.some(pattern => pattern.test(text));
+  }
+
+  submitButton.addEventListener("click", () => {
+    const a = answerText("answer-a");
+    const b = answerText("answer-b");
+    const c = answerText("answer-c");
+
+    const markA = hasAny(a, [/insulat/, /does not conduct/, /non-conduct/, /poor conductor/]) ? 1 : 0;
+
+    let markB = 0;
+    if (hasAny(b, [/water level.*ris/, /water.*ris/, /container.*fill/])) markB += 1;
+    if (hasAny(b, [/(wooden )?block.*ris/, /float.*ris/, /block.*float/, /metal sheet.*ris/])) markB += 1;
+    if (hasAny(b, [/sheet.*touch.*rod/, /plate.*touch.*rod/, /circuit.*clos/, /current.*flow.*pump/, /pump.*turn.*on/, /pump.*work/])) markB += 1;
+
+    let markC = 0;
+    if (hasAny(c, [/lengthen.*rod/, /longer.*rod/, /extend.*rod/, /move.*rod.*down/, /lower.*rod/])) markC += 1;
+    if (hasAny(c, [/lower water/, /low water/, /less.*rain/, /touch.*rod/, /contact.*rod/, /circuit.*clos/, /pump.*turn.*on/])) markC += 1;
+
+    const total = markA + markB + markC;
+    scoreA.textContent = markA + " / 1";
+    scoreB.textContent = markB + " / 3";
+    scoreC.textContent = markC + " / 2";
+    totalScore.textContent = total + " / 6";
+    results.hidden = false;
+    results.scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+})();
+</script>
+</body>
+</html>
